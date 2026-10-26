@@ -12,7 +12,3 @@ function nextCal(){return CAL.find(c=>!profile().calDone.includes(c.id))}
 function lastHistory(){return profile().history[0]||null}
 function recommendedTemplate(){const p=profile(),last=p.lastCats||{};const score=c=>last[c]?Date.now()-new Date(last[c]).getTime():1e15;const cats=['legs','push','pull','core'].sort((a,b)=>score(b)-score(a));let primary=cats.slice(0,3);const map={legs:['squat','rdl','lunge'],push:['bench','lmpress','skull'],pull:['pulldown','lowrow','pullup'],core:['anti','crunch','platecarry']};let items=[];primary.forEach((c,i)=>items.push(map[c][i%map[c].length]));items=[...new Set(items)];if(!items.includes('bandpull'))items.push('bandpull');return {name:'Adaptive Strength',focus:'Advance the least-recently trained patterns first.',items};}
 function currentPrescription(k){const es=profile().exercise[k]||{};return es.workingLoad?`${es.workingLoad} • ${EX[k].target}`:EX[k].target;}
-loadLocal();renderAll();
-$('#syncBtn').textContent='Save';$('#syncBtn').onclick=save;
-$$('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
-if('serviceWorker'in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('/sw.js').catch(()=>{});
