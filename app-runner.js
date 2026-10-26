@@ -70,3 +70,13 @@ async function finishWorkout(){
  await save();renderAll();tab('today');
  alert('Workout saved.');
 }
+
+function initApp(){
+  loadLocal();
+  renderAll();
+  const syncBtn=$('#syncBtn');
+  if(syncBtn){syncBtn.textContent='Save';syncBtn.onclick=save;}
+  $$('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+initApp();
