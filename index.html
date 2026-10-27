@@ -9,21 +9,22 @@
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
-<div class="top"><div class="brand">HALE'S <b>GYM</b></div><div class="small muted">Strong • fit • showing</div></div>
+<div class="top"><div class="brand">HALE'S <b>GYM</b></div><div class="small muted">THE FACTORY • CLOCK IN • GET WORK</div></div>
 <div id="app">
 <div class="wrap">
   <div class="tabs" id="tabs">
-    <button data-tab="today" class="active">Today</button><button data-tab="cal">Calibration</button><button data-tab="quick">Quick Hit</button><button data-tab="couple">Couple</button><button data-tab="library">Library</button><button data-tab="history">History</button>
+    <button data-tab="today" class="active">Floor</button><button data-tab="cal">Calibration</button><button data-tab="quick">Quick Hit</button><button data-tab="hiit">HIIT</button><button data-tab="custom">Custom</button><button data-tab="library">Library</button><button data-tab="history">History</button>
   </div>
 
   <section id="today" class="tab"></section>
   <section id="cal" class="tab hide"></section>
   <section id="quick" class="tab hide"></section>
-  <section id="couple" class="tab hide"></section>
+  <section id="hiit" class="tab hide"></section>
+  <section id="custom" class="tab hide"></section>
   <section id="library" class="tab hide"></section>
   <section id="history" class="tab hide"></section>
 </div>
-<div class="bottom"><button id="syncBtn">↻ Sync</button><button class="primary" id="startRecommended">Start Today</button></div>
+<div class="bottom"><button id="syncBtn">Save</button><button class="primary" id="startRecommended">Clock In</button></div>
 </div>
 
 <div id="infoModal" class="modal hide"><div class="sheet"><button class="ghost" id="closeInfo" style="float:right">✕</button><div id="infoBody"></div></div></div>
