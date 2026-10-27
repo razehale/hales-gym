@@ -1,53 +1,64 @@
 function renderToday(){
- const p=profile(), c=nextCal();
- const content=c?`<div class="card hero"><h1>${p.name}: Calibration ${p.calDone.length+1}/6</h1><p>${c.name}</p><p class="muted">${c.focus}</p><button class="primary" data-startcal="${c.id}">Start calibration</button></div>`:
- (()=>{const w=recommendedTemplate();return `<div class="card hero"><h1>Today's program</h1><p><b>${w.name}</b></p><p class="muted">${w.focus}</p><div>${w.items.map(k=>`<div class="exercise"><b>${EX[k].n}</b><div class="small muted">${currentPrescription(k)} • ${EX[k].gear}</div></div>`).join('')}</div><button class="primary" data-startrec="1">Start workout</button></div>`})();
- $('#today').innerHTML=`<div class="card"><div class="grid"><div><label>Profile</label><select id="profileSel"><option value="me">You</option><option value="gf">Girlfriend</option></select></div><div class="kpi"><span class="small muted">Saved sessions</span><b>${p.history.length}</b></div></div></div>${content}
- <div class="card"><h2>Programming rule</h2><p class="notice"><b>Advance the program first.</b> Extra gym time fills with accessories, bands, rings, micro-movements or conditioning after the important work is covered.</p></div>`;
- $('#profileSel').value=activeProfile; $('#profileSel').onchange=e=>{activeProfile=e.target.value;renderAll()};
- const sc=$('[data-startcal]');if(sc)sc.onclick=()=>startCalibration(sc.dataset.startcal);
- const sr=$('[data-startrec]');if(sr)sr.onclick=()=>startWorkout(recommendedTemplate().items,'Program');
- $('#startRecommended').onclick=()=>c?startCalibration(c.id):startWorkout(recommendedTemplate().items,'Program');
+ const p=profile(), c=nextCal(), inGym=state.gym.clockedIn;
+ const shift=inGym?`<div class="card hero"><div class="row"><div><h1>CLOCKED IN</h1><p class="muted">The factory is open. Pick the work.</p></div><span class="badge">ON FLOOR</span></div>
+ <div class="grid"><button class="primary" id="doRecommended">Recommended</button><button id="doRandom">Random</button><button id="goCustom">Custom</button><button id="goHiit">HIIT</button></div></div>`:
+ `<div class="card hero"><h1>HALE'S GYM</h1><p><b>The factory.</b> Clock in, do the work, log the shift.</p><button class="primary" id="clockInBtn" style="width:100%">CLOCK IN</button></div>`;
+ const cal=c?`<div class="card"><h2>Calibration ${p.calDone.length+1}/2</h2><p><b>${c.name}</b></p><p class="muted">${c.focus}</p><button data-startcal="${c.id}">Run calibration</button></div>`:
+ `<div class="card"><h2>Program Active</h2><p class="notice">Calibration is complete. Normal workouts now keep evaluating your loads and progress in the background.</p></div>`;
+ $('#today').innerHTML=`<div class="card"><div class="row"><div><span class="small muted">Worker</span><h2>${p.name}</h2></div><div class="kpi"><span class="small muted">Workouts logged</span><b>${p.history.length}</b></div></div><button id="addProfile" class="ghost">+ Add Profile</button></div>${shift}${cal}`;
+ const cib=$('#clockInBtn');if(cib)cib.onclick=clockIn;
+ const rec=$('#doRecommended');if(rec)rec.onclick=()=>startWorkout(recommendedTemplate().items,'Recommended');
+ const rnd=$('#doRandom');if(rnd)rnd.onclick=()=>startWorkout(randomWorkout(),'Random');
+ const gc=$('#goCustom');if(gc)gc.onclick=()=>tab('custom');
+ const gh=$('#goHiit');if(gh)gh.onclick=()=>tab('hiit');
+ const sc=$('[data-startcal]');if(sc)sc.onclick=()=>{if(ensureClockedIn())startCalibration(sc.dataset.startcal)};
+ $('#addProfile').onclick=()=>alert('Additional profiles are reserved for a later update.');
+ const bottom=$('#startRecommended');bottom.textContent=inGym?'CLOCK OUT':'CLOCK IN';bottom.onclick=inGym?clockOut:clockIn;
 }
 function renderCal(){
  const p=profile();
- $('#cal').innerHTML=`<div class="card hero"><h1>2-Week Calibration</h1><p>Working-8 rule: the heaviest load you can control for the target while still leaving roughly 2 good reps.</p></div>`+
+ $('#cal').innerHTML=`<div class="card hero"><h1>2-Session Calibration</h1><p>Get enough baseline data to start training. After this, regular workouts keep validating and adjusting the program.</p></div>`+
  CAL.map(c=>`<div class="card"><div class="row"><div><h2>${c.name}</h2><p class="muted">${c.focus}</p></div><span class="badge">${p.calDone.includes(c.id)?'DONE':'PENDING'}</span></div>${c.items.map(k=>`<div class="exercise"><div class="row"><div><b>${EX[k].n}</b><div class="small muted">${EX[k].gear} • ${EX[k].target}</div></div><button data-info="${k}">How</button></div></div>`).join('')}<button class="primary" data-cal="${c.id}">${p.calDone.includes(c.id)?'Repeat':'Start'}</button></div>`).join('');
- bindInfo();$$('[data-cal]').forEach(b=>b.onclick=()=>startCalibration(b.dataset.cal));
+ bindInfo();$$('[data-cal]').forEach(b=>b.onclick=()=>{if(ensureClockedIn())startCalibration(b.dataset.cal)});
 }
 function renderQuick(){
- $('#quick').innerHTML=`<div class="card hero"><h1>Quick Hit</h1><p>Not random. It starts with something that advances your real program, then uses remaining time intelligently.</p></div>
- <div class="card"><div class="grid"><div><label>Time</label><select id="qmins"><option>15</option><option>25</option><option selected>45</option><option>60</option><option>90</option><option>120</option></select></div>
- <div><label>Intensity</label><select id="qint"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option><option value="work">I'm working today</option></select></div></div>
- <button class="primary" id="makeQuick" style="width:100%;margin-top:10px">Build Quick Hit</button></div><div id="quickPlan"></div>`;
+ $('#quick').innerHTML=`<div class="card hero"><h1>Quick Hit</h1><p>Short on time, not random. Advance useful work first.</p></div>
+ <div class="card"><div class="grid"><div><label>Time</label><select id="qmins"><option>15</option><option>25</option><option>40</option><option selected>60</option></select></div><div><label>Intensity</label><select id="qint"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option><option value="work">I'm working today</option></select></div></div><button class="primary" id="makeQuick" style="width:100%;margin-top:10px">Build Quick Hit</button></div><div id="quickPlan"></div>`;
  $('#makeQuick').onclick=buildQuick;
 }
 function buildQuick(){
+ if(!ensureClockedIn())return;
  const mins=+$('#qmins').value, intensity=$('#qint').value, rec=recommendedTemplate().items.slice(0,2);
  const accessories=['bandpull','bandext','ringrow','triceps','curl','crunch','platecarry','rope','kickback','abduct'];
- let count=mins<=25?3:mins<=45?4:mins<=60?5:mins<=90?6:8;
- let items=[...rec];
- for(const k of accessories){if(items.length>=count)break;if(!items.includes(k))items.push(k)}
- const work=intensity==='easy'?30:intensity==='normal'?40:intensity==='hard'?45:50, rest=intensity==='easy'?30:intensity==='normal'?20:15;
- $('#quickPlan').innerHTML=`<div class="card"><h2>${mins}-minute Quick Hit</h2><p class="muted">Program priority first, then accessories. Timed blocks: ${work}s work / ${rest}s transition where appropriate.</p>${items.map((k,i)=>`<div class="exercise"><b>${i<2?'PROGRAM • ':''}${EX[k].n}</b><div class="small muted">${EX[k].gear} • ${currentPrescription(k)}</div></div>`).join('')}<button class="primary" id="startQuick">Start timed workout</button></div>`;
- $('#startQuick').onclick=()=>startWorkout(items,'Quick Hit',{work,rest,mins});
+ let count=mins<=25?3:mins<=40?4:5;let items=[...rec];for(const k of accessories){if(items.length>=count)break;if(!items.includes(k))items.push(k)}
+ const rest=intensity==='easy'?90:intensity==='normal'?75:intensity==='hard'?60:45;
+ $('#quickPlan').innerHTML=`<div class="card"><h2>${mins}-minute Quick Hit</h2><p class="muted">Program work first. Rest target ${rest}s between rep sets.</p>${items.map((k,i)=>`<div class="exercise"><b>${i<2?'PROGRAM • ':''}${EX[k].n}</b><div class="small muted">${EX[k].gear} • ${currentPrescription(k)}</div></div>`).join('')}<button class="primary" id="startQuick">Start</button></div>`;
+ $('#startQuick').onclick=()=>startWorkout(items,'Quick Hit',{rest,mins});
 }
-function renderCouple(){
- $('#couple').innerHTML=`<div class="card hero"><h1>Couple Training</h1><p>Tuesday when possible. Saturday is the anchor. Same movement goal, different level/load.</p></div>
- <div class="card"><h2>Tuesday • Strength</h2><table><tr><td>Squat</td><td>You: barbell • Her: landmine/KB</td><td>3×8</td></tr><tr><td>Pull</td><td>You: pull-up/pulldown • Her: pulldown/assisted pull</td><td>3×8</td></tr><tr><td>Hinge</td><td>You: barbell RDL • Her: KB/landmine</td><td>3×8</td></tr><tr><td>Push</td><td>You: bench • Her: incline push-up/landmine</td><td>3×8</td></tr><tr><td>Core</td><td>Low-cable half-kneeling anti-rotation</td><td>2×10/side</td></tr></table><button class="primary" id="startTue">Start Tuesday</button></div>
- <div class="card"><h2>Saturday • Full Body</h2><table><tr><td>Pull-up pathway</td><td>Individual level</td><td>benchmark + practice</td></tr><tr><td>Landmine squat</td><td>Separate loads</td><td>3×8</td></tr><tr><td>Push-up progression</td><td>Separate level</td><td>2 sets</td></tr><tr><td>Low row</td><td>Separate loads</td><td>3×10</td></tr><tr><td>Reverse lunge</td><td>Separate load</td><td>3×8/leg</td></tr><tr><td>Rope / circuit</td><td>Timed</td><td>8 min</td></tr></table><button class="primary" id="startSat">Start Saturday</button></div>
- <div class="card"><h2>Her away option</h2><p>25-lb kettlebell + bodyweight + jump rope: goblet squat, KB RDL, reverse lunge, 1-arm KB row, floor press if controllable, plank, rope intervals.</p></div>`;
- $('#startTue').onclick=()=>startWorkout(['squat','pulldown','rdl','bench','anti'],'Couple Tuesday');
- $('#startSat').onclick=()=>startWorkout(['hang','lmsquat','pushup','lowrow','lunge','rope'],'Couple Saturday',{work:40,rest:20});
+function renderHIIT(){
+ $('#hiit').innerHTML=`<div class="card hero"><h1>HIIT</h1><p>Conditioning is its own job now: timed work, timed recovery, automatic rounds.</p></div>
+ <div class="card"><div class="grid"><div><label>Time</label><select id="hmins"><option>10</option><option selected>12</option><option>16</option><option>20</option><option>25</option></select></div><div><label>Intervals</label><select id="hint"><option value="30,30">30 / 30</option><option value="40,20" selected>40 / 20</option><option value="45,15">45 / 15</option></select></div><div><label>Style</label><select id="hstyle"><option value="full">Full Body</option><option value="cardio">Cardio + Agility</option><option value="strength">Strength HIIT</option><option value="low">Low Impact</option></select></div></div><button class="primary" id="buildHiit" style="width:100%;margin-top:10px">Build HIIT</button></div><div id="hiitPlan"></div>`;
+ $('#buildHiit').onclick=buildHIIT;
+}
+function buildHIIT(){
+ if(!ensureClockedIn())return;
+ const mins=+$('#hmins').value,[work,rest]=$('#hint').value.split(',').map(Number),style=$('#hstyle').value;
+ const plans={full:['rope','lmsquat','pushup','lowrow'],cardio:['rope','hexlateral','hexforward','hexshuffle'],strength:['lmsquat','lmpress','lowrow','lunge'],low:['hexforward','anti','lowrow','platecarry']};
+ const items=plans[style],cycle=items.length*(work+rest),rounds=Math.max(1,Math.floor(mins*60/cycle));
+ $('#hiitPlan').innerHTML=`<div class="card"><h2>${mins}-minute HIIT</h2><p class="muted">${work}s work / ${rest}s recover • ${rounds} rounds</p>${items.map(k=>`<div class="exercise"><b>${EX[k].n}</b><div class="small muted">${EX[k].gear}</div></div>`).join('')}<button class="primary" id="startHiit">Start HIIT</button></div>`;
+ $('#startHiit').onclick=()=>startWorkout(items,'HIIT',{hiit:true,work,rest,rounds});
+}
+function renderCustom(){
+ const keys=Object.keys(EX).filter(k=>EX[k].cat!=='micro'||['bandpull','bandext'].includes(k));
+ $('#custom').innerHTML=`<div class="card hero"><h1>Custom Shift</h1><p>Pick the work. HALE'S GYM still logs it like any other session.</p></div><div class="card"><div id="customList">${keys.map(k=>`<label class="exercise" style="display:block"><input type="checkbox" value="${k}" class="customEx"> <b>${EX[k].n}</b><div class="small muted">${EX[k].gear}</div></label>`).join('')}</div><button class="primary" id="startCustom" style="width:100%;margin-top:10px">Start Custom</button></div>`;
+ $('#startCustom').onclick=()=>{if(!ensureClockedIn())return;const items=$$('.customEx:checked').map(x=>x.value);if(!items.length){alert('Pick at least one exercise.');return}startWorkout(items,'Custom')};
 }
 function renderLibrary(){
- const groups={legs:'Lower / Hinge',push:'Push',pull:'Pull',core:'Core / Carry',micro:'Bands / Micro',cardio:'Conditioning'};
- $('#library').innerHTML=`<div class="card hero"><h1>Exercise Library</h1><p>Core lifts stay stable. Extra equipment gives us options without turning programming into chaos.</p></div>`+
- Object.keys(groups).map(g=>`<div class="card"><h2>${groups[g]}</h2>${Object.keys(EX).filter(k=>EX[k].cat===g).map(k=>`<div class="exercise"><div class="row"><div><b>${EX[k].n}</b><div class="small muted">${EX[k].gear}</div></div><button data-info="${k}">How</button></div></div>`).join('')}</div>`).join('');
- bindInfo();
+ const groups={legs:'Lower / Hinge',push:'Push',pull:'Pull',core:'Core / Carry',micro:'Bands / Micro',cardio:'Conditioning / Agility'};
+ $('#library').innerHTML=`<div class="card hero"><h1>Exercise Library</h1><p>Your actual factory floor: rack, high/low cable, bench, landmine, bands, plates, rope and six agility hexes.</p></div>`+Object.keys(groups).map(g=>`<div class="card"><h2>${groups[g]}</h2>${Object.keys(EX).filter(k=>EX[k].cat===g).map(k=>`<div class="exercise"><div class="row"><div><b>${EX[k].n}</b><div class="small muted">${EX[k].gear}</div></div><button data-info="${k}">How</button></div></div>`).join('')}</div>`).join('');bindInfo();
 }
 function renderHistory(){
- const p=profile();
- $('#history').innerHTML=`<div class="card hero"><h1>History</h1><p>${p.name} • ${p.goal}</p></div><div class="card">${p.history.length?`<table><tr><th>Date</th><th>Workout</th><th>Work</th></tr>${p.history.slice(0,40).map(h=>`<tr><td>${new Date(h.date).toLocaleDateString()}</td><td>${h.type}</td><td>${h.entries.map(e=>`${EX[e.k]?.n||e.k}: ${e.load||''} ${e.reps||''}`).join('<br>')}</td></tr>`).join('')}</table>`:'<p class="muted">No workouts logged yet.</p>'}</div>`;
+ const p=profile(),gs=state.gym.sessions||[];
+ $('#history').innerHTML=`<div class="card hero"><h1>Shift Log</h1><p>${p.name} • ${p.goal}</p></div><div class="card"><h2>Gym clock</h2>${gs.length?`<table><tr><th>Clock in</th><th>Clock out</th></tr>${gs.slice(0,20).map(s=>`<tr><td>${new Date(s.startedAt).toLocaleString()}</td><td>${new Date(s.endedAt).toLocaleString()}</td></tr>`).join('')}</table>`:'<p class="muted">No completed gym shifts yet.</p>'}</div><div class="card"><h2>Workout history</h2>${p.history.length?`<table><tr><th>Date</th><th>Workout</th><th>Work</th></tr>${p.history.slice(0,40).map(h=>`<tr><td>${new Date(h.date).toLocaleDateString()}</td><td>${h.type}</td><td>${h.entries.map(e=>`${EX[e.k]?.n||e.k}: ${e.load||''} ${e.reps||''}`).join('<br>')}</td></tr>`).join('')}</table>`:'<p class="muted">No workouts logged yet.</p>'}</div>`;
 }
-function renderAll(){renderToday();renderCal();renderQuick();renderCouple();renderLibrary();renderHistory()}
+function renderAll(){renderToday();renderCal();renderQuick();renderHIIT();renderCustom();renderLibrary();renderHistory()}
