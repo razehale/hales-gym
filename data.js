@@ -3,14 +3,14 @@ squat:{n:'Barbell Back Squat',cat:'legs',gear:'Rack + barbell',target:'3×8',wor
 bench:{n:'Barbell Bench Press',cat:'push',gear:'Bench + rack + barbell',target:'3×8',works:'Chest, triceps, front shoulders.',how:'Set bench inside rack. Shoulder blades back/down, feet planted, lower to lower-mid chest, press without bouncing.',yt:'barbell bench press proper form'},
 rdl:{n:'Barbell Romanian Deadlift',cat:'legs',gear:'Barbell',target:'3×8',works:'Hamstrings, glutes, grip.',how:'Soft knees, hips back, bar close to legs, stop while back stays neutral, then drive hips forward.',yt:'romanian deadlift barbell proper form'},
 pulldown:{n:'High-Pulley Lat Pulldown',cat:'pull',gear:'HIGH pulley',target:'3×8',works:'Lats, upper back, biceps.',how:'Sit or kneel under high pulley. Pull elbows toward ribs and handle toward upper chest. Control the return.',yt:'high pulley lat pulldown home gym'},
-lowrow:{n:'Low-Pulley Row',cat:'pull',gear:'LOW pulley',target:'3×10',works:'Mid-back, lats, rhomboids, biceps.',how:'Face low pulley, torso tall. Pull toward lower ribs, pause, return under control.',yt:'low cable seated row proper form'},
-lmpress:{n:'Landmine Press',cat:'push',gear:'Landmine',target:'3×8/arm',works:'Shoulders, upper chest, triceps, core.',how:'Hold free end near shoulder. Press forward/up along bar path while ribs stay controlled.',yt:'single arm landmine press proper form'},
-lmsquat:{n:'Landmine Squat',cat:'legs',gear:'Landmine',target:'3×8',works:'Quads, glutes, core.',how:'Hold free end at chest. Sit down and slightly back, whole foot planted, then stand.',yt:'landmine squat proper form'},
+lowrow:{n:'Low-Pulley Row',cat:'pull',gear:'LOW pulley',target:'3×8',works:'Mid-back, lats, rhomboids, biceps.',how:'Face low pulley, torso tall. Pull toward lower ribs, pause, return under control.',yt:'low cable seated row proper form'},
+lmpress:{n:'Landmine Press',cat:'push',gear:'Landmine',target:'3×8/arm',works:'Shoulders, upper chest, triceps, core.',how:'Hold free end near shoulder. Press forward/up along bar path while ribs stay controlled. Log bar + weight on the free end.',yt:'single arm landmine press proper form'},
+lmsquat:{n:'Landmine Squat',cat:'legs',gear:'Landmine',target:'3×8',works:'Quads, glutes, core.',how:'Hold free end at chest. Sit down and slightly back, whole foot planted, then stand. Log bar + weight on the free end.',yt:'landmine squat proper form'},
 lmrow:{n:'Landmine Row',cat:'pull',gear:'Landmine',target:'3×8',works:'Lats, mid-back, rear shoulders, biceps.',how:'Hinge over bar with neutral back. Pull bar end toward lower chest/upper abdomen, then lower.',yt:'landmine row proper form'},
 hang:{n:'Hang / Pull-Up Pathway',cat:'pull',gear:'Pull-up station',target:'quality reps/time',works:'Grip, lats, shoulders, scapular control.',how:'Progress supported hang → dead hang → scapular pull → negative → clean pull-up.',yt:'scapular pull up dead hang progression'},
 pullup:{n:'Pull-Up',cat:'pull',gear:'Pull-up station',target:'3 quality sets',works:'Lats, upper back, biceps, grip.',how:'Start from controlled hang, pull chest toward bar without kicking, lower under control.',yt:'strict pull up proper form'},
 pushup:{n:'Push-Up',cat:'push',gear:'Floor / bench / rack',target:'2–3 quality sets',works:'Chest, triceps, shoulders, core.',how:'Rigid body line. Use incline on bench/rack when needed. Lower under control, press away.',yt:'incline push up progression proper form'},
-lunge:{n:'Reverse Lunge',cat:'legs',gear:'BW / plate / landmine',target:'3×8/leg',works:'Glutes, quads, hamstrings, balance.',how:'Step backward, lower rear knee, keep front foot planted, drive through front leg.',yt:'reverse lunge proper form'},
+lunge:{n:'Reverse Lunge',cat:'legs',gear:'BW / handled plate / landmine',target:'3×8/leg',works:'Glutes, quads, hamstrings, balance.',how:'Step backward, lower rear knee, keep front foot planted, drive through front leg.',yt:'reverse lunge proper form'},
 anti:{n:'Low-Cable Half-Kneeling Anti-Rotation Press',cat:'core',gear:'LOW pulley',target:'2×10/side',works:'Obliques, deep core, hip/trunk stability.',how:'Half-kneel sideways to low cable. Bring handle to sternum, brace, press forward without rotating.',yt:'half kneeling low cable anti rotation press'},
 skull:{n:'Low-Cable Lying Skull Crusher',cat:'push',gear:'LOW pulley + adjustable bench',target:'3×10',works:'Triceps, especially long head.',how:'Bench/head near low pulley using the slight negative angle that gives a clean line. Keep upper arms mostly fixed and extend at elbows.',yt:'low cable lying skull crusher bench'},
 triceps:{n:'High-Pulley Pressdown',cat:'push',gear:'HIGH pulley + rope/bar',target:'3×10–12',works:'Triceps.',how:'Elbows near ribs, extend fully, return under control without shoulder swing.',yt:'cable triceps pressdown proper form'},
@@ -31,7 +31,12 @@ hexlateral:{n:'Hex Lateral In-Out',cat:'cardio',gear:'6 agility hex floor marker
 hexforward:{n:'Hex Forward Quick Steps',cat:'cardio',gear:'6 agility hex floor markers',target:'intervals',works:'Foot speed, coordination, conditioning.',how:'Move forward through the hex pattern with fast short steps. Keep posture athletic and prioritize clean foot placement.',yt:'agility hex quick feet drill'},
 hexshuffle:{n:'Hex Shuffle Change-of-Direction',cat:'cardio',gear:'6 agility hex floor markers',target:'intervals',works:'Lateral movement, change of direction, hips, conditioning.',how:'Use the hexes as targets for short shuffles and direction changes. Plant under control and avoid crossing the feet unless the drill calls for it.',yt:'agility hex shuffle drill'}
 };
+window.HALE_STRENGTH_CAL=['squat','bench','lowrow','rdl','pulldown','lmpress'];
 window.HALE_CAL=[
- {id:'c1',name:'Strength Calibration',focus:'Find clean repeatable working loads for the main strength patterns.',items:['squat','bench','lowrow','rdl']},
- {id:'c2',name:'Movement + Conditioning Calibration',focus:'Establish pull-up/hang, single-leg, core and conditioning baselines.',items:['hang','lunge','anti','rope','hexlateral']}
+ {id:'c1',name:'Calibration A • Base Strength',focus:'Find starting loads for squat, bench and horizontal pull, then record a hang benchmark.',items:['squat','bench','lowrow','hang']},
+ {id:'c2',name:'Calibration B • Hinge + Vertical',focus:'Find starting loads for RDL, pulldown and landmine press, then record conditioning/agility benchmarks.',items:['rdl','pulldown','lmpress','rope','hexlateral']}
 ];
+window.HALE_PROGRAMS={
+ A:{name:'Factory A',focus:'Squat + horizontal push/pull',items:['squat','bench','lowrow','anti','rope']},
+ B:{name:'Factory B',focus:'Hinge + vertical push/pull',items:['rdl','lmpress','pulldown','lunge','platecarry']}
+};
