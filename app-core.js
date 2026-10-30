@@ -2,10 +2,10 @@ const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll
 let state=null, activeProfile='me', runner=null, tick=null;
 const EX=window.HALE_EX, CAL=window.HALE_CAL, PROGRAMS=window.HALE_PROGRAMS, STRENGTH_CAL=window.HALE_STRENGTH_CAL;
 const STORE='hales_gym_state_v1';
-function makeProfile(name='You'){return {name,goal:'Fit, strong, visibly trained',calDone:[],history:[],exercise:{},lastCats:{},program:{next:'A',completed:0},benchmarks:{}}}
+function makeProfile(name='You'){return {name,goal:'Fit, strong, visibly trained',calDone:[],history:[],exercise:{},lastCats:{},program:{next:'A',completed:0},benchmarks:{},lastRandom:[]}}
 function defaultState(){return {version:4,profiles:{me:makeProfile('You')},gym:{clockedIn:false,startedAt:null,profileId:null,sessions:[]},settings:{barWeight:45},updatedAt:null};}
 function migrateProfile(p){
- if(!p.exercise)p.exercise={};if(!p.history)p.history=[];if(!p.calDone)p.calDone=[];if(!p.lastCats)p.lastCats={};if(!p.program)p.program={next:'A',completed:0};if(!p.benchmarks)p.benchmarks={};return p;
+ if(!p.exercise)p.exercise={};if(!p.history)p.history=[];if(!p.calDone)p.calDone=[];if(!p.lastCats)p.lastCats={};if(!p.program)p.program={next:'A',completed:0};if(!p.benchmarks)p.benchmarks={};if(!Array.isArray(p.lastRandom))p.lastRandom=[];return p;
 }
 function loadLocal(){
  try{
@@ -59,5 +59,29 @@ function advanceProgramIfNeeded(type){if(type!=='Recommended')return;const p=pro
 async function clockIn(){if(state.gym.clockedIn)return;const sel=$('#profileSel');const pid=sel?.value||activeProfile;if(!state.profiles[pid]){alert('Choose a profile first.');return}activeProfile=pid;state.gym.clockedIn=true;state.gym.startedAt=new Date().toISOString();state.gym.profileId=pid;await save();renderAll();tab('today')}
 async function clockOut(){if(!state.gym.clockedIn)return;if(runner){alert('Finish or exit the current workout before clocking out.');return}const end=new Date().toISOString();state.gym.sessions.unshift({profileId:activeProfile,startedAt:state.gym.startedAt,endedAt:end});state.gym.clockedIn=false;state.gym.startedAt=null;state.gym.profileId=null;await save();renderAll();tab('today')}
 function ensureClockedIn(){if(!state.gym.clockedIn){alert('Choose your profile and clock in first.');tab('today');return false}return true}
-function randomWorkout(){const pool=['squat','bench','rdl','pulldown','lowrow','lmpress','lmsquat','lmrow','pullup','pushup','lunge','anti','crunch','platecarry','bandpull','rope','hexlateral','hexforward','hexshuffle'];return [...pool].sort(()=>Math.random()-.5).slice(0,5)}
+function shuffled(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function sameWorkout(a,b){return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((x,i)=>x===b[i])}
+function randomWorkout(){
+ const p=profile();
+ const groups={
+  legs:['squat','rdl','lmsquat','lunge','kickback','abduct','hamcurl'],
+  push:['bench','lmpress','pushup','skull','triceps','ringsupport'],
+  pull:['pulldown','lowrow','lmrow','pullup','assistpull','ringrow','curl'],
+  core:['anti','crunch','platecarry'],
+  conditioning:['rope','hexlateral','hexforward','hexshuffle','bandpull','bandext','bandwalk']
+ };
+ let result=[];
+ for(let tries=0;tries<20;tries++){
+  result=[
+   shuffled(groups.legs)[0],
+   shuffled(groups.push)[0],
+   shuffled(groups.pull)[0],
+   shuffled(groups.core)[0],
+   shuffled(groups.conditioning)[0]
+  ];
+  result=shuffled(result);
+  if(!sameWorkout(result,p.lastRandom))break;
+ }
+ p.lastRandom=[...result];save();return result;
+}
 function defaultHiitInterval(){const b=profile().benchmarks||{},rope=b.rope?.seconds||0,hex=b.hexlateral?.seconds||0;const best=Math.max(rope,hex);return best>=35?'40,20':'30,30'}
