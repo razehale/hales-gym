@@ -5,6 +5,10 @@ const timedKeys=['rope','hang','platecarry','hexlateral','hexforward','hexshuffl
 function isTimedKey(k){return timedKeys.includes(k)}
 function isStrengthCal(k){return STRENGTH_CAL.includes(k)}
 function benchmarkSeconds(k){return k==='hang'?60:45}
+let audioCtx=null;
+function unlockAudio(){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume()}catch{}}
+function beep(freq=880,duration=.12,volume=.07){try{unlockAudio();if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=freq;o.type='sine';g.gain.value=volume;o.connect(g);g.connect(audioCtx.destination);const now=audioCtx.currentTime;o.start(now);o.stop(now+duration)}catch{}}
+function transitionBeep(kind){if(kind==='work'){beep(1046,.10,.08);setTimeout(()=>beep(1318,.14,.08),120)}else{beep(660,.18,.08)}}
 function startCalibration(id){const c=CAL.find(x=>x.id===id);if(c)startWorkout(c.items,'Calibration',{calibration:true},id)}
 function buildSteps(items,opts){
  const steps=[];
@@ -12,7 +16,7 @@ function buildSteps(items,opts){
  if(opts?.hiit){const rounds=opts.rounds||1;for(let r=1;r<=rounds;r++)items.forEach((k,idx)=>{steps.push({kind:'work',k,set:r,round:r,seconds:opts.work||40,hiit:true});if(!(r===rounds&&idx===items.length-1))steps.push({kind:'rest',k,round:r,seconds:opts.rest||20,hiit:true})});return steps}
  items.forEach(k=>{const timed=isTimedKey(k);let sets=k==='bandpull'||k==='bandext'||k==='anti'?2:3;if(k==='hang')sets=1;for(let s=1;s<=sets;s++){steps.push({kind:'work',k,set:s,seconds:timed?(opts?.work||40):0});if(s<sets||k!==items[items.length-1])steps.push({kind:'rest',k,seconds:opts?.rest||(timed?20:90)})}});return steps
 }
-function startWorkout(items,type,opts,calId){if(!ensureClockedIn())return;clearInterval(tick);tick=null;runner={items,type,opts:opts||{},calId,steps:buildSteps(items,opts||{}),i:0,entries:[],remaining:0,orig:0,running:false,startedAt:new Date().toISOString(),calAttempts:{},calResults:{}};$('#runnerModal').classList.remove('hide');showStep()}
+function startWorkout(items,type,opts,calId){if(!ensureClockedIn())return;unlockAudio();clearInterval(tick);tick=null;runner={items,type,opts:opts||{},calId,steps:buildSteps(items,opts||{}),i:0,entries:[],remaining:0,orig:0,running:false,startedAt:new Date().toISOString(),calAttempts:{},calResults:{}};$('#runnerModal').classList.remove('hide');showStep()}
 function setAdvice(text){const a=$('#calAdvice');if(!a)return;a.textContent=text||'';a.classList.toggle('hide',!text)}
 function calibrationCue(st){
  if(isTimedKey(st.k))return `Benchmark • go until the timer ends or stop when clean form/footwork breaks.`;
@@ -23,17 +27,17 @@ function showStep(){
  if(!runner)return;clearInterval(tick);tick=null;runner.running=false;setAdvice('');if(runner.i>=runner.steps.length){finishWorkout();return}
  const st=runner.steps[runner.i],e=EX[st.k];if(!e){runner.i++;showStep();return}
  $('#runnerMeta').textContent=`${runner.type}${st.round?' • Round '+st.round:''}${st.calibration?' • '+(st.attempt===2?'Attempt 2':'Attempt 1'):''} • ${runner.i+1}/${runner.steps.length}`;
- if(st.kind==='rest'){$('#runnerStep').textContent='RECOVER';$('#runnerCue').textContent=st.cue||('Next: '+(EX[runner.steps.slice(runner.i+1).find(x=>x.kind==='work')?.k]?.n||'finish'));$('#logFields').classList.add('hide');$('#runnerDone').textContent='Skip Rest';setAdvice(st.advice||'');startCountdown(st.seconds,true);return}
+ if(st.kind==='rest'){$('#runnerStep').textContent='RECOVER';$('#runnerCue').textContent=st.cue||('Next: '+(EX[runner.steps.slice(runner.i+1).find(x=>x.kind==='work')?.k]?.n||'finish'));$('#logFields').classList.add('hide');$('#runnerDone').textContent='Skip Rest';setAdvice(st.advice||'');transitionBeep('rest');startCountdown(st.seconds,true);return}
  $('#runnerStep').textContent=e.n+(st.hiit?'':st.calibration?'':' • Set '+st.set);
  if(st.calibration){
   $('#runnerCue').textContent=calibrationCue(st);$('#logFields').classList.remove('hide');
   const prior=runner.calAttempts[st.k]?.[0];$('#runLoad').value=st.attempt===2?(prior?.suggestedLoad||''):(profile().exercise[st.k]?.workingLoad||'');$('#runReps').value='';
   const ew=$('#effortWrap');if(ew)ew.classList.toggle('hide',!isStrengthCal(st.k));$('#runEffort').value='clean';$('#runnerDone').textContent=isTimedKey(st.k)?'STOP / SAVE':'SAVE ATTEMPT';
-  if(st.seconds){$('#runLoad').value='';$('#runReps').value='';startCountdown(st.seconds,false)}else{$('#runnerTimer').textContent=st.attempt===1?'TARGET 12':'TARGET 10';$('#runnerBar').style.width='0%'}
- }else if(st.hiit){$('#runnerCue').textContent=`${st.seconds}s work • ${e.gear}`;$('#logFields').classList.add('hide');$('#runnerDone').textContent='Done Early';startCountdown(st.seconds,true)}
- else{$('#runnerCue').textContent=`${currentPrescription(st.k)} • ${e.gear}`;$('#logFields').classList.remove('hide');const ew=$('#effortWrap');if(ew)ew.classList.add('hide');$('#runLoad').value=profile().exercise[st.k]?.nextLoad||profile().exercise[st.k]?.workingLoad||'';$('#runReps').value='';$('#runnerDone').textContent='Set Done';if(st.seconds)startCountdown(st.seconds,false);else{$('#runnerTimer').textContent='REP SET';$('#runnerBar').style.width='0%'}}
+  if(st.seconds){$('#runLoad').value='';$('#runReps').value='';transitionBeep('work');startCountdown(st.seconds,false)}else{$('#runnerTimer').textContent=st.attempt===1?'TARGET 12':'TARGET 10';$('#runnerBar').style.width='0%'}
+ }else if(st.hiit){$('#runnerCue').textContent=`${st.seconds}s work • ${e.gear}`;$('#logFields').classList.add('hide');$('#runnerDone').textContent='Done Early';transitionBeep('work');startCountdown(st.seconds,true)}
+ else{$('#runnerCue').textContent=`${currentPrescription(st.k)} • ${e.gear}`;$('#logFields').classList.remove('hide');const ew=$('#effortWrap');if(ew)ew.classList.add('hide');$('#runLoad').value=profile().exercise[st.k]?.nextLoad||profile().exercise[st.k]?.workingLoad||'';$('#runReps').value='';$('#runnerDone').textContent='Set Done';if(st.seconds){transitionBeep('work');startCountdown(st.seconds,false)}else{$('#runnerTimer').textContent='REP SET';$('#runnerBar').style.width='0%'}}
 }
-function startCountdown(sec,autoNext){if(!runner)return;runner.remaining=runner.orig=sec;runner.running=true;drawTime();tick=setInterval(()=>{if(!runner){clearInterval(tick);tick=null;return}runner.remaining--;drawTime();if(runner.remaining<=0){clearInterval(tick);tick=null;runner.running=false;if(autoNext){const st=runner.steps[runner.i];if(st?.kind==='work'&&st.hiit)runner.entries.push({k:st.k,set:st.set,load:'',reps:`${st.seconds}s`});runner.i++;showStep()}}},1000)}
+function startCountdown(sec,autoNext){if(!runner)return;runner.remaining=runner.orig=sec;runner.running=true;drawTime();tick=setInterval(()=>{if(!runner){clearInterval(tick);tick=null;return}runner.remaining--;if(runner.remaining===3||runner.remaining===2||runner.remaining===1)beep(880,.08,.06);drawTime();if(runner.remaining<=0){beep(440,.22,.09);clearInterval(tick);tick=null;runner.running=false;if(autoNext){const st=runner.steps[runner.i];if(st?.kind==='work'&&st.hiit)runner.entries.push({k:st.k,set:st.set,load:'',reps:`${st.seconds}s`});runner.i++;showStep()}}},1000)}
 function drawTime(){if(!runner)return;let m=Math.floor(runner.remaining/60),s=runner.remaining%60;$('#runnerTimer').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');$('#runnerBar').style.width=runner.orig?((100*(1-runner.remaining/runner.orig))+'%'):'0%'}
 function finishStrengthCalibration(st,attempt){
  const p=profile(),es=p.exercise[st.k]||(p.exercise[st.k]={});const attempts=runner.calAttempts[st.k]||[];
