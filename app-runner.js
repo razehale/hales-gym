@@ -23,6 +23,10 @@ function calibrationCue(st){
  if(st.attempt===1)return 'Attempt 1 of 2 • choose a reasonable load • push for up to 12 clean reps, but do not grind past clean form.';
  const prev=runner.calAttempts[st.k]?.[0];return prev?.direction==='up'?'Attempt 2 of 2 • increase the load • target about 10 clean reps.':prev?.direction==='down'?'Attempt 2 of 2 • lower the load • target about 10 clean reps after the recovery.':'Attempt 2 of 2 • target about 10 clean reps.'
 }
+function startPrepThen(sec,autoNext){
+ if(!runner)return;clearInterval(tick);tick=null;let prep=5;runner.running=true;$('#runnerTimer').textContent=`PREP ${prep}`;$('#runnerBar').style.width='0%';beep(740,.08,.05);
+ tick=setInterval(()=>{if(!runner){clearInterval(tick);tick=null;return}prep--;if(prep>0){$('#runnerTimer').textContent=`PREP ${prep}`;if(prep<=3)beep(880,.08,.06)}else{clearInterval(tick);tick=null;runner.running=false;transitionBeep('work');startCountdown(sec,autoNext)}},1000)
+}
 function showStep(){
  if(!runner)return;clearInterval(tick);tick=null;runner.running=false;setAdvice('');if(runner.i>=runner.steps.length){finishWorkout();return}
  const st=runner.steps[runner.i],e=EX[st.k];if(!e){runner.i++;showStep();return}
@@ -33,9 +37,9 @@ function showStep(){
   $('#runnerCue').textContent=calibrationCue(st);$('#logFields').classList.remove('hide');
   const prior=runner.calAttempts[st.k]?.[0];$('#runLoad').value=st.attempt===2?(prior?.suggestedLoad||''):(profile().exercise[st.k]?.workingLoad||'');$('#runReps').value='';
   const ew=$('#effortWrap');if(ew)ew.classList.toggle('hide',!isStrengthCal(st.k));$('#runEffort').value='clean';$('#runnerDone').textContent=isTimedKey(st.k)?'STOP / SAVE':'SAVE ATTEMPT';
-  if(st.seconds){$('#runLoad').value='';$('#runReps').value='';transitionBeep('work');startCountdown(st.seconds,false)}else{$('#runnerTimer').textContent=st.attempt===1?'TARGET 12':'TARGET 10';$('#runnerBar').style.width='0%'}
- }else if(st.hiit){$('#runnerCue').textContent=`${st.seconds}s work • ${e.gear}`;$('#logFields').classList.add('hide');$('#runnerDone').textContent='Done Early';transitionBeep('work');startCountdown(st.seconds,true)}
- else{$('#runnerCue').textContent=`${currentPrescription(st.k)} • ${e.gear}`;$('#logFields').classList.remove('hide');const ew=$('#effortWrap');if(ew)ew.classList.add('hide');$('#runLoad').value=profile().exercise[st.k]?.nextLoad||profile().exercise[st.k]?.workingLoad||'';$('#runReps').value='';$('#runnerDone').textContent='Set Done';if(st.seconds){transitionBeep('work');startCountdown(st.seconds,false)}else{$('#runnerTimer').textContent='REP SET';$('#runnerBar').style.width='0%'}}
+  if(st.seconds){$('#runLoad').value='';$('#runReps').value='';startPrepThen(st.seconds,false)}else{$('#runnerTimer').textContent=st.attempt===1?'TARGET 12':'TARGET 10';$('#runnerBar').style.width='0%'}
+ }else if(st.hiit){$('#runnerCue').textContent=`Get in position • ${e.gear}`;$('#logFields').classList.add('hide');$('#runnerDone').textContent='Done Early';startPrepThen(st.seconds,true)}
+ else{$('#runnerCue').textContent=`${currentPrescription(st.k)} • ${e.gear}`;$('#logFields').classList.remove('hide');const ew=$('#effortWrap');if(ew)ew.classList.add('hide');$('#runLoad').value=profile().exercise[st.k]?.nextLoad||profile().exercise[st.k]?.workingLoad||'';$('#runReps').value='';$('#runnerDone').textContent='Set Done';if(st.seconds){startPrepThen(st.seconds,false)}else{$('#runnerTimer').textContent='REP SET';$('#runnerBar').style.width='0%'}}
 }
 function startCountdown(sec,autoNext){if(!runner)return;runner.remaining=runner.orig=sec;runner.running=true;drawTime();tick=setInterval(()=>{if(!runner){clearInterval(tick);tick=null;return}runner.remaining--;if(runner.remaining===3||runner.remaining===2||runner.remaining===1)beep(880,.08,.06);drawTime();if(runner.remaining<=0){beep(440,.22,.09);clearInterval(tick);tick=null;runner.running=false;if(autoNext){const st=runner.steps[runner.i];if(st?.kind==='work'&&st.hiit)runner.entries.push({k:st.k,set:st.set,load:'',reps:`${st.seconds}s`});runner.i++;showStep()}}},1000)}
 function drawTime(){if(!runner)return;let m=Math.floor(runner.remaining/60),s=runner.remaining%60;$('#runnerTimer').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');$('#runnerBar').style.width=runner.orig?((100*(1-runner.remaining/runner.orig))+'%'):'0%'}
